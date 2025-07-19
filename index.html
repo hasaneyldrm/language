@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multilang Manager</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🌍 Multilang Manager</h1>
+            <p>JSON çeviri dosyalarınızı kolayca yönetin</p>
+        </header>
+
+        <section class="upload-section">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-content">
+                    <div class="upload-icon">📁</div>
+                    <h3>JSON Dosyasını Yükleyin</h3>
+                    <p>Çeviri dosyanızı sürükleyip bırakın veya seçin</p>
+                    <input type="file" id="fileInput" accept=".json" hidden>
+                    <button class="btn btn-primary" id="selectFileBtn">Dosya Seç</button>
+                </div>
+            </div>
+        </section>
+
+        <main class="content" id="mainContent" style="display: none;">
+            <div class="controls">
+                <div class="search-section">
+                    <input type="text" id="searchInput" placeholder="🔍 Anahtar veya çeviri ara..." class="search-input">
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" id="showMissingBtn">
+                        <span class="btn-icon">⚠️</span>
+                        Eksikleri Göster
+                    </button>
+
+                    <button class="btn btn-info" id="addLanguageBtn">
+                        <span class="btn-icon">➕</span>
+                        Yeni Dil
+                    </button>
+                    <button class="btn btn-primary" id="exportBtn">
+                        <span class="btn-icon">💾</span>
+                        İndir
+                    </button>
+                </div>
+            </div>
+
+            <div class="stats-section" id="statsSection">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalKeys">0</div>
+                    <div class="stat-label">Toplam Anahtar</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalLanguages">0</div>
+                    <div class="stat-label">Dil Sayısı</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="missingCount">0</div>
+                    <div class="stat-label">Eksik Çeviri</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="completionRate">0%</div>
+                    <div class="stat-label">Tamamlanma</div>
+                </div>
+            </div>
+
+            <div class="table-container" id="tableContainer">
+                <div class="table-wrapper">
+                    <table class="translation-table" id="translationTable">
+                        <thead id="tableHeader">
+                            <!-- Dinamik olarak oluşturulacak -->
+                        </thead>
+                        <tbody id="tableBody">
+                            <!-- Dinamik olarak oluşturulacak -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Missing translations view -->
+            <div class="missing-container" id="missingContainer" style="display: none;">
+                <div class="missing-content">
+                    <div class="missing-list">
+                        <h3>📋 Eksik Çeviriler</h3>
+                        <div id="missingList" class="missing-items">
+                            <!-- Dinamik olarak oluşturulacak -->
+                        </div>
+                    </div>
+                    <div class="missing-json">
+                        <h3>📄 JSON Format</h3>
+                        <div class="json-container">
+                            <button class="btn btn-info btn-copy" id="copyJsonBtn">📋 Kopyala</button>
+                            <pre id="missingJsonOutput" class="json-output"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+            <div class="loading-content">
+                <div class="spinner"></div>
+                <p id="loadingText">Yükleniyor...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for adding new language -->
+    <div class="modal" id="addLanguageModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Yeni Dil Ekle</h3>
+                <button class="modal-close" id="closeModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <label for="languageCode">Dil Kodu (örn: fr, de, es):</label>
+                <input type="text" id="languageCode" placeholder="tr" maxlength="5">
+                <label for="languageName">Dil Adı (opsiyonel):</label>
+                <input type="text" id="languageName" placeholder="Türkçe">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelAddLanguage">İptal</button>
+                <button class="btn btn-primary" id="confirmAddLanguage">Ekle</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
