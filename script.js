@@ -462,10 +462,7 @@ class UIManager {
 
                 // Update translation manager
                 if (window.translationManager) {
-                    // Save state before change for undo functionality
-                    if (window.stateManager && !e.target.dataset.skipHistory) {
-                        window.stateManager.addToHistory(window.translationManager);
-                    }
+
 
                     window.translationManager.updateTranslation(key, lang, value);
 
@@ -477,10 +474,7 @@ class UIManager {
                     // Update statistics
                     this.updateStatistics(window.translationManager);
 
-                    // Auto-save state
-                    if (window.stateManager && window.fileManager) {
-                        window.stateManager.saveState(window.translationManager, window.fileManager.getCurrentFileInfo());
-                    }
+
                 }
             });
         });
@@ -904,147 +898,11 @@ class AITranslator {
     }
 }
 
-// State Management Class
-class StateManager {
-    constructor() {
-        this.storageKey = 'multilang-manager-state';
-        this.history = [];
-        this.currentHistoryIndex = -1;
-        this.maxHistorySize = 50;
-    }
-
-    // Save current state to localStorage
-    saveState(translationManager, fileInfo = null) {
-        try {
-            const state = {
-                translations: translationManager.translations,
-                languages: translationManager.languages,
-                translationKeys: translationManager.translationKeys,
-                fileInfo: fileInfo,
-                timestamp: Date.now()
-            };
-
-            localStorage.setItem(this.storageKey, JSON.stringify(state));
-            return true;
-        } catch (error) {
-            console.error('State save error:', error);
-            return false;
-        }
-    }
-
-    // Load state from localStorage
-    loadState() {
-        try {
-            const stateStr = localStorage.getItem(this.storageKey);
-            if (!stateStr) return null;
-
-            const state = JSON.parse(stateStr);
-
-            // Validate state structure
-            if (!state.translations || !state.languages || !state.translationKeys) {
-                return null;
-            }
-
-            return state;
-        } catch (error) {
-            console.error('State load error:', error);
-            return null;
-        }
-    }
-
-    // Clear saved state
-    clearState() {
-        try {
-            localStorage.removeItem(this.storageKey);
-            this.history = [];
-            this.currentHistoryIndex = -1;
-            return true;
-        } catch (error) {
-            console.error('State clear error:', error);
-            return false;
-        }
-    }
-
-    // Add state to history for undo/redo
-    addToHistory(translationManager) {
-        try {
-            const state = {
-                translations: JSON.parse(JSON.stringify(translationManager.translations)),
-                languages: [...translationManager.languages],
-                translationKeys: [...translationManager.translationKeys],
-                timestamp: Date.now()
-            };
-
-            // Remove any states after current index (when adding new state after undo)
-            this.history = this.history.slice(0, this.currentHistoryIndex + 1);
-
-            // Add new state
-            this.history.push(state);
-            this.currentHistoryIndex = this.history.length - 1;
-
-            // Limit history size
-            if (this.history.length > this.maxHistorySize) {
-                this.history.shift();
-                this.currentHistoryIndex--;
-            }
-
-            return true;
-        } catch (error) {
-            console.error('History add error:', error);
-            return false;
-        }
-    }
-
-    // Undo last change
-    undo(translationManager) {
-        if (this.currentHistoryIndex <= 0) {
-            return false; // Nothing to undo
-        }
-
-        this.currentHistoryIndex--;
-        const state = this.history[this.currentHistoryIndex];
-
-        this.restoreState(translationManager, state);
-        return true;
-    }
-
-    // Redo last undone change
-    redo(translationManager) {
-        if (this.currentHistoryIndex >= this.history.length - 1) {
-            return false; // Nothing to redo
-        }
-
-        this.currentHistoryIndex++;
-        const state = this.history[this.currentHistoryIndex];
-
-        this.restoreState(translationManager, state);
-        return true;
-    }
-
-    // Restore state to translation manager
-    restoreState(translationManager, state) {
-        translationManager.translations = state.translations;
-        translationManager.languages = state.languages;
-        translationManager.translationKeys = state.translationKeys;
-    }
-
-    // Check if undo is available
-    canUndo() {
-        return this.currentHistoryIndex > 0;
-    }
-
-    // Check if redo is available
-    canRedo() {
-        return this.currentHistoryIndex < this.history.length - 1;
-    }
-}
-
 // Global instances
 let fileManager;
 let translationManager;
 let uiManager;
 let aiTranslator;
-let stateManager;
 
 // Initialize application
 function initializeApp() {
@@ -1054,54 +912,19 @@ function initializeApp() {
     translationManager = new TranslationManager();
     uiManager = new UIManager();
     aiTranslator = new AITranslator();
-    stateManager = new StateManager();
 
     // Make instances globally accessible
     window.translationManager = translationManager;
     window.fileManager = fileManager;
     window.uiManager = uiManager;
     window.aiTranslator = aiTranslator;
-    window.stateManager = stateManager;
 
     setupEventListeners();
-    tryRestoreSession();
 
     console.log('Multilang Manager initialized successfully');
 }
 
-// Try to restore previous session
-function tryRestoreSession() {
-    const savedState = stateManager.loadState();
 
-    if (savedState && savedState.translations && Object.keys(savedState.translations).length > 0) {
-        try {
-            // Restore translation manager state
-            translationManager.translations = savedState.translations;
-            translationManager.languages = savedState.languages;
-            translationManager.translationKeys = savedState.translationKeys;
-
-            // Update UI
-            uiManager.renderTranslationTable(translationManager);
-            uiManager.updateStatistics(translationManager);
-            uiManager.showMainContent();
-
-            // Add to history
-            stateManager.addToHistory(translationManager);
-
-            // Show restore message
-            const fileInfo = savedState.fileInfo;
-            const message = fileInfo
-                ? `Önceki oturum geri yüklendi: ${fileInfo.name}`
-                : 'Önceki oturum geri yüklendi';
-
-            uiManager.displaySuccessMessage(message);
-
-        } catch (error) {
-            console.error('Session restore error:', error);
-            stateManager.clearState();
-        }
-    }
-}
 
 // Setup event listeners
 function setupEventListeners() {
@@ -1332,9 +1155,7 @@ async function loadTranslationFile(file) {
             sampleTranslations: Object.keys(parsedData.translations).slice(0, 3)
         });
 
-        // Save initial state to history
-        console.log('Step 7: Adding to history...');
-        stateManager.addToHistory(translationManager);
+        console.log('Step 7: File processing completed...');
 
         // Update UI
         console.log('Step 8: Updating UI...');
@@ -1342,9 +1163,7 @@ async function loadTranslationFile(file) {
         uiManager.updateStatistics(translationManager);
         uiManager.showMainContent();
 
-        // Save state for persistence
-        console.log('Step 9: Saving state...');
-        stateManager.saveState(translationManager, fileManager.getCurrentFileInfo());
+        console.log('Step 9: File processing completed...');
 
         console.log('Step 10: File loading completed successfully');
         uiManager.displaySuccessMessage(`Dosya başarıyla yüklendi! ${parsedData.keys.length} anahtar, ${parsedData.languages.length} dil bulundu.`);
@@ -1360,28 +1179,7 @@ async function loadTranslationFile(file) {
 
 // Handle keyboard shortcuts
 function handleKeyboardShortcuts(event) {
-    // Ctrl+Z for undo
-    if (event.ctrlKey && event.key === 'z' && !event.shiftKey) {
-        event.preventDefault();
-        if (stateManager && stateManager.canUndo()) {
-            stateManager.undo(translationManager);
-            uiManager.renderTranslationTable(translationManager);
-            uiManager.updateStatistics(translationManager);
-            uiManager.displaySuccessMessage('Geri alındı');
-        }
-    }
-
-    // Ctrl+Shift+Z or Ctrl+Y for redo
-    if ((event.ctrlKey && event.shiftKey && event.key === 'Z') ||
-        (event.ctrlKey && event.key === 'y')) {
-        event.preventDefault();
-        if (stateManager && stateManager.canRedo()) {
-            stateManager.redo(translationManager);
-            uiManager.renderTranslationTable(translationManager);
-            uiManager.updateStatistics(translationManager);
-            uiManager.displaySuccessMessage('Yeniden yapıldı');
-        }
-    }
+    // Cache functionality has been removed - no undo/redo available
 
     // Ctrl+S for save/export
     if (event.ctrlKey && event.key === 's') {
